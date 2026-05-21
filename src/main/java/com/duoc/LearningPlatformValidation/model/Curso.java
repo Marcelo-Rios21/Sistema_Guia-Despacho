@@ -1,5 +1,8 @@
 package com.duoc.LearningPlatformValidation.model;
 
+import java.math.BigDecimal;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -9,23 +12,32 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "cursos")
 public class Curso {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String nombre;
-    private String descripcion;
-    private Long profesorId;
+
+    @Column(nullable = false)
+    private String instructor;
+
+    @Column(nullable = false)
+    private String duracion;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal costo;
 
     public Curso() {
     }
 
-    public Curso(Long id, String nombre, String descripcion, Long profesorId) {
+    public Curso(Long id, String nombre, String instructor, String duracion, BigDecimal costo) {
         this.id = id;
         this.nombre = nombre;
-        this.descripcion = descripcion;
-        this.profesorId = profesorId;
+        this.instructor = instructor;
+        this.duracion = duracion;
+        this.costo = costo;
     }
 
     public Long getId() {
@@ -44,20 +56,27 @@ public class Curso {
         this.nombre = nombre;
     }
 
-    public String getDescripcion() {
-        return descripcion;
+    public String getInstructor() {
+        return instructor;
     }
 
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
+    public void setInstructor(String instructor) {
+        this.instructor = instructor;
     }
 
-    public Long getProfesorId() {
-        return profesorId;
+    public String getDuracion() {
+        return duracion;
     }
 
-    public void setProfesorId(Long profesorId) {
-        this.profesorId = profesorId;
+    public void setDuracion(String duracion) {
+        this.duracion = duracion;
     }
-    
+
+    public BigDecimal getCosto() {
+        return costo;
+    }
+
+    public void setCosto(BigDecimal costo) {
+        this.costo = costo;
+    }
 }

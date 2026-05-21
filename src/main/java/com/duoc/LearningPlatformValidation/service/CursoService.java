@@ -35,8 +35,9 @@ public class CursoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Curso no encontrado con ID: " + id));
 
         cursoExistente.setNombre(cursoActualizado.getNombre());
-        cursoExistente.setDescripcion(cursoActualizado.getDescripcion());
-        cursoExistente.setProfesorId(cursoActualizado.getProfesorId());
+        cursoExistente.setInstructor(cursoActualizado.getInstructor());
+        cursoExistente.setDuracion(cursoActualizado.getDuracion());
+        cursoExistente.setCosto(cursoActualizado.getCosto());
 
         return cursoRepository.save(cursoExistente);
     }
