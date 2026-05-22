@@ -8,11 +8,13 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.duoc.LearningPlatformValidation.dto.BoletaResponse;
+import com.duoc.LearningPlatformValidation.dto.InscripcionRequest;
+import com.duoc.LearningPlatformValidation.dto.InscripcionResumenResponse;
 import com.duoc.LearningPlatformValidation.model.Inscripcion;
 import com.duoc.LearningPlatformValidation.service.InscripcionService;
 
@@ -36,26 +38,21 @@ public class InscripcionController {
         return ResponseEntity.ok(inscripcionService.buscarInscripcionPorId(id));
     }
 
-    @GetMapping("/curso/{cursoId}")
-    public ResponseEntity<List<Inscripcion>> buscarInscripcionesPorCurso(@PathVariable Long cursoId) {
-        return ResponseEntity.ok(inscripcionService.buscarInscripcionesPorCurso(cursoId));
+    @GetMapping("/estudiante/{estudianteId}")
+    public ResponseEntity<List<Inscripcion>> buscarInscripcionesPorEstudiante(@PathVariable Long estudianteId) {
+        return ResponseEntity.ok(inscripcionService.buscarInscripcionesPorEstudiante(estudianteId));
     }
 
     @PostMapping
-    public ResponseEntity<Inscripcion> registrarInscripcion(@RequestBody Inscripcion inscripcion) {
-        Inscripcion nuevaInscripcion = inscripcionService.registrarInscripcion(inscripcion);
-        URI location = URI.create("/api/inscripciones/" + nuevaInscripcion.getId());
-
-        return ResponseEntity.created(location).body(nuevaInscripcion);
+    public ResponseEntity<InscripcionResumenResponse> registrarInscripcion(@RequestBody InscripcionRequest request) {
+        InscripcionResumenResponse resumen = inscripcionService.registrarInscripcion(request);
+        URI location = URI.create("/api/inscripciones/" + resumen.getInscripcionId());
+        return ResponseEntity.created(location).body(resumen);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Inscripcion> actualizarInscripcion(
-            @PathVariable Long id,
-            @RequestBody Inscripcion inscripcion) {
-
-        Inscripcion inscripcionActualizada = inscripcionService.actualizarInscripcion(id, inscripcion);
-        return ResponseEntity.ok(inscripcionActualizada);
+    @GetMapping("/{id}/boleta")
+    public ResponseEntity<BoletaResponse> generarBoleta(@PathVariable Long id) {
+        return ResponseEntity.ok(inscripcionService.generarBoleta(id));
     }
 
     @DeleteMapping("/{id}")

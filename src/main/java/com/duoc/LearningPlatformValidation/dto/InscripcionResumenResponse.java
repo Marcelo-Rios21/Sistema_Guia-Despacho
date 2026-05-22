@@ -1,57 +1,40 @@
-package com.duoc.LearningPlatformValidation.model;
+package com.duoc.LearningPlatformValidation.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+public class InscripcionResumenResponse {
 
-@Entity
-@Table(name = "inscripciones")
-public class Inscripcion {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
+    private Long inscripcionId;
     private Long estudianteId;
-
-    @Column(nullable = false)
     private LocalDate fechaInscripcion;
-
-    @Column(nullable = false, precision = 10, scale = 2)
+    private List<CursoInscritoResponse> cursos;
     private BigDecimal total;
-
-    @Column(nullable = false)
     private String metodoPago;
-
-    @Column(nullable = false)
     private String estadoPago;
 
-    public Inscripcion() {
-    }
-
-    public Inscripcion(Long id, Long estudianteId, LocalDate fechaInscripcion,
-                       BigDecimal total, String metodoPago, String estadoPago) {
-        this.id = id;
+    public InscripcionResumenResponse(Long inscripcionId, Long estudianteId,
+                                      LocalDate fechaInscripcion,
+                                      List<CursoInscritoResponse> cursos,
+                                      BigDecimal total,
+                                      String metodoPago,
+                                      String estadoPago) {
+        this.inscripcionId = inscripcionId;
         this.estudianteId = estudianteId;
         this.fechaInscripcion = fechaInscripcion;
+        this.cursos = cursos;
         this.total = total;
         this.metodoPago = metodoPago;
         this.estadoPago = estadoPago;
     }
 
-    public Long getId() {
-        return id;
+    public Long getInscripcionId() {
+        return inscripcionId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setInscripcionId(Long inscripcionId) {
+        this.inscripcionId = inscripcionId;
     }
 
     public Long getEstudianteId() {
@@ -68,6 +51,14 @@ public class Inscripcion {
 
     public void setFechaInscripcion(LocalDate fechaInscripcion) {
         this.fechaInscripcion = fechaInscripcion;
+    }
+
+    public List<CursoInscritoResponse> getCursos() {
+        return cursos;
+    }
+
+    public void setCursos(List<CursoInscritoResponse> cursos) {
+        this.cursos = cursos;
     }
 
     public BigDecimal getTotal() {
@@ -93,6 +84,5 @@ public class Inscripcion {
     public void setEstadoPago(String estadoPago) {
         this.estadoPago = estadoPago;
     }
-    
     
 }

@@ -50,15 +50,11 @@ public class PagoController {
     public ResponseEntity<Pago> registrarPago(@RequestBody Pago pago) {
         Pago nuevoPago = pagoService.registrarPago(pago);
         URI location = URI.create("/api/pagos/" + nuevoPago.getId());
-
         return ResponseEntity.created(location).body(nuevoPago);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Pago> actualizarPago(
-            @PathVariable Long id,
-            @RequestBody Pago pago) {
-
+    public ResponseEntity<Pago> actualizarPago(@PathVariable Long id, @RequestBody Pago pago) {
         Pago pagoActualizado = pagoService.actualizarPago(id, pago);
         return ResponseEntity.ok(pagoActualizado);
     }

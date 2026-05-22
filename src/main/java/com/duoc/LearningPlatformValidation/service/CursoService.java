@@ -1,5 +1,6 @@
 package com.duoc.LearningPlatformValidation.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -27,12 +28,15 @@ public class CursoService {
     }
 
     public Curso registrarCurso(Curso curso) {
+        validarCurso(curso);
         return cursoRepository.save(curso);
     }
 
     public Curso actualizarCurso(Long id, Curso cursoActualizado) {
         Curso cursoExistente = cursoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Curso no encontrado con ID: " + id));
+
+        validarCurso(cursoActualizado);
 
         cursoExistente.setNombre(cursoActualizado.getNombre());
         cursoExistente.setInstructor(cursoActualizado.getInstructor());
@@ -48,5 +52,23 @@ public class CursoService {
         }
 
         cursoRepository.deleteById(id);
+    }
+
+    private void validarCurso(Curso curso) {
+        if (curso.getNombre() == null || curso.getNombre().isBlank()) {
+            throw new IllegalArgumentException("El nombre del curso es obligatorio.");
+        }
+
+        if (curso.getInstructor() == null || curso.getInstructor().isBlank()) {
+            throw new IllegalArgumentException("El instructor del curso es obligatorio.");
+        }
+
+        if (curso.getDuracion() == null || curso.getDuracion().isBlank()) {
+            throw new IllegalArgumentException("La duración del curso es obligatoria.");
+        }
+
+        if (curso.getCosto() == null || curso.getCosto().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El costo del curso debe ser mayor a cero.");
+        }
     }
 }

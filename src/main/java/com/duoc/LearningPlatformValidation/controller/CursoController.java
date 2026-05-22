@@ -40,17 +40,12 @@ public class CursoController {
     public ResponseEntity<Curso> registrarCurso(@RequestBody Curso curso) {
         Curso nuevoCurso = cursoService.registrarCurso(curso);
         URI location = URI.create("/api/cursos/" + nuevoCurso.getId());
-
         return ResponseEntity.created(location).body(nuevoCurso);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Curso> actualizarCurso(
-            @PathVariable Long id,
-            @RequestBody Curso curso) {
-
-        Curso cursoActualizado = cursoService.actualizarCurso(id, curso);
-        return ResponseEntity.ok(cursoActualizado);
+    public ResponseEntity<Curso> actualizarCurso(@PathVariable Long id, @RequestBody Curso curso) {
+        return ResponseEntity.ok(cursoService.actualizarCurso(id, curso));
     }
 
     @DeleteMapping("/{id}")

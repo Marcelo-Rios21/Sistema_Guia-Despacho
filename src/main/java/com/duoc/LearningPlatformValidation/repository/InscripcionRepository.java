@@ -8,5 +8,5 @@ import com.duoc.LearningPlatformValidation.model.Inscripcion;
 
 public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> {
 
-    List<Inscripcion> findByCursoId(Long cursoId);
+    List<Inscripcion> findByEstudianteId(Long estudianteId);
 }
