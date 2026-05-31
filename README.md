@@ -4,7 +4,9 @@
 
 Este proyecto corresponde a una plataforma de aprendizaje en línea desarrollada con Spring Boot. La aplicación permite gestionar usuarios, cursos, inscripciones, evaluaciones, pagos y notificaciones mediante endpoints REST.
 
-El sistema está construido como una aplicación backend con arquitectura por capas, separando controladores, servicios, repositorios y modelos. Además, se incluye una propuesta de arquitectura basada en microservicios para explicar cómo podría evolucionar el sistema en un entorno más escalable.
+El sistema está construido como una aplicación backend con arquitectura por capas, separando controladores, servicios, repositorios, modelos, DTO, configuración y manejo de errores. Además, se incluye una propuesta de arquitectura basada en microservicios para explicar cómo podría evolucionar el sistema en un entorno más escalable.
+
+En esta versión se incorpora integración con AWS S3 para almacenar archivos físicos asociados al resumen de inscripción. Esta funcionalidad permite generar, subir, descargar, modificar y eliminar el archivo del resumen desde un bucket en la nube.
 
 ---
 
@@ -23,7 +25,7 @@ La comunicación propuesta entre los servicios es mediante REST, usando JSON par
 La explicación completa de la arquitectura y el diagrama se encuentran en:
 
 ```txt
-docs/arquitectura_microservicios.md
+docs/arquitectura_micro.md
 ```
 
 ---
@@ -34,15 +36,20 @@ docs/arquitectura_microservicios.md
 - Spring Boot
 - Spring Web MVC
 - Spring Data JPA
-- Spring Data JDBC
 - Spring Boot Actuator
 - Spring AOP
 - Oracle Database
 - Oracle JDBC Driver
 - Hibernate
 - HikariCP
-- Maven
-- Postman
+- Maven Wrapper
+- AWS S3
+- AWS SDK for Java
+- Docker
+- Docker Hub
+- GitHub Actions
+- EC2
+- Postman / PowerShell
 
 ---
 
@@ -51,7 +58,9 @@ docs/arquitectura_microservicios.md
 ```txt
 src/main/java/com/duoc/LearningPlatformValidation
 ├── aspect
+├── config
 ├── controller
+├── dto
 ├── exception
 ├── model
 ├── repository
@@ -64,8 +73,10 @@ La aplicación mantiene una separación por capas:
 - `service`: contiene la lógica de negocio.
 - `repository`: comunica la aplicación con la base de datos.
 - `model`: define las entidades del sistema.
+- `dto`: define objetos de transferencia de datos.
 - `exception`: centraliza el manejo de errores.
 - `aspect`: contiene la lógica transversal de logging.
+- `config`: contiene configuraciones adicionales, como la conexión con AWS S3.
 
 ---
 
@@ -87,8 +98,8 @@ Ejemplo en PowerShell:
 
 ```powershell
 $env:DB_URL="jdbc:oracle:thin:@..."
-$env:DB_USERNAME="USUARIO"
-$env:DB_PASSWORD="CONTRASEÑA"
+$env:DB_USERNAME="LPV_APP"
+$env:DB_PASSWORD="********"
 $env:DB_DRIVER="oracle.jdbc.OracleDriver"
 $env:DB_DIALECT="org.hibernate.dialect.OracleDialect"
 ```
@@ -97,18 +108,83 @@ Aunque en algunos recursos se menciona H2 como alternativa para pruebas locales,
 
 ---
 
+## Configuración de AWS S3
+
+El proyecto incorpora almacenamiento de archivos en AWS S3 para guardar los resúmenes de inscripción generados por el sistema.
+
+Bucket utilizado:
+
+```txt
+lpv-resumenes-inscripcion
+```
+
+Región:
+
+```txt
+us-east-1
+```
+
+La configuración se realiza mediante variables de entorno:
+
+```txt
+AWS_REGION
+AWS_S3_BUCKET
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_SESSION_TOKEN
+```
+
+Ejemplo en PowerShell:
+
+```powershell
+$env:AWS_REGION="us-east-1"
+$env:AWS_S3_BUCKET="lpv-resumenes-inscripcion"
+
+$env:AWS_ACCESS_KEY_ID="********"
+$env:AWS_SECRET_ACCESS_KEY="********"
+$env:AWS_SESSION_TOKEN="********"
+```
+
+Las credenciales de AWS no se almacenan en el código fuente. En este proyecto se utilizaron credenciales temporales entregadas por el entorno académico AWS Learner Lab.
+
+La configuración del cliente S3 se encuentra en:
+
+```txt
+src/main/java/com/duoc/LearningPlatformValidation/config/S3Config.java
+```
+
+El servicio encargado de operar con S3 se encuentra en:
+
+```txt
+src/main/java/com/duoc/LearningPlatformValidation/service/S3StorageService.java
+```
+
+---
+
 ## Ejecución del proyecto
 
 Compilar el proyecto:
 
 ```bash
-mvn clean install
+./mvnw clean compile
+```
+
+En Windows PowerShell:
+
+```powershell
+.\mvnw clean compile
 ```
 
 Ejecutar la aplicación:
 
 ```bash
-mvn spring-boot:run
+./mvnw spring-boot:run
+```
+
+En Windows PowerShell:
+
+```powershell
+.\mvnw spring-boot:run
 ```
 
 La aplicación queda disponible en:
@@ -146,10 +222,36 @@ DELETE /api/usuarios/{id}
 ```txt
 GET    /api/inscripciones
 GET    /api/inscripciones/{id}
-GET    /api/inscripciones/curso/{cursoId}
+GET    /api/inscripciones/estudiante/{estudianteId}
 POST   /api/inscripciones
-PUT    /api/inscripciones/{id}
+GET    /api/inscripciones/{id}/boleta
 DELETE /api/inscripciones/{id}
+```
+
+### Resumen de inscripción y AWS S3
+
+```txt
+GET    /api/inscripciones/{id}/resumen/archivo
+POST   /api/inscripciones/{id}/resumen/s3
+GET    /api/inscripciones/{id}/resumen/s3/download
+PUT    /api/inscripciones/{id}/resumen/s3
+DELETE /api/inscripciones/{id}/resumen/s3
+```
+
+Detalle de los endpoints:
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | `/api/inscripciones/{id}/resumen/archivo` | Genera y descarga el resumen como archivo físico `.txt`. |
+| POST | `/api/inscripciones/{id}/resumen/s3` | Genera el resumen y lo sube al bucket S3. |
+| GET | `/api/inscripciones/{id}/resumen/s3/download` | Descarga desde S3 el archivo del resumen. |
+| PUT | `/api/inscripciones/{id}/resumen/s3` | Reemplaza/modifica el archivo del resumen en S3. |
+| DELETE | `/api/inscripciones/{id}/resumen/s3` | Elimina el archivo del resumen desde S3. |
+
+Cada archivo se almacena dentro del bucket usando una carpeta cuyo nombre corresponde al número del resumen:
+
+```txt
+BOL-00001/resumen-inscripcion-BOL-00001.txt
 ```
 
 ### Evaluaciones
@@ -189,6 +291,200 @@ POST   /api/notificaciones
 PUT    /api/notificaciones/{id}
 PUT    /api/notificaciones/{id}/leer
 DELETE /api/notificaciones/{id}
+```
+
+---
+
+## Ejemplo de flujo probado
+
+### 1. Crear usuario
+
+```powershell
+$body = @{
+    nombre = "Juan Perez"
+    correo = "juan.perez@test.cl"
+    contrasena = "123456"
+    rol = "ESTUDIANTE"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:8080/api/usuarios" -Method Post -ContentType "application/json" -Body $body
+```
+
+### 2. Crear curso
+
+```powershell
+$body = @{
+    nombre = "Spring Boot desde cero"
+    instructor = "Carlos Soto"
+    duracion = "40 horas"
+    costo = 50000
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:8080/api/cursos" -Method Post -ContentType "application/json" -Body $body
+```
+
+### 3. Crear inscripción
+
+```powershell
+$body = @{
+    estudianteId = 1
+    cursoIds = @(1)
+    metodoPago = "TARJETA"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:8080/api/inscripciones" -Method Post -ContentType "application/json" -Body $body
+```
+
+### 4. Descargar resumen como archivo físico
+
+```powershell
+Invoke-WebRequest -Uri "http://localhost:8080/api/inscripciones/1/resumen/archivo" -OutFile "resumen-inscripcion-1.txt"
+```
+
+### 5. Subir resumen a S3
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8080/api/inscripciones/1/resumen/s3" -Method Post
+```
+
+Respuesta esperada:
+
+```txt
+archivo                           numeroResumen mensaje                                           rutaS3
+-------                           ------------- -------                                           ------
+resumen-inscripcion-BOL-00001.txt BOL-00001     Resumen de inscripción subido correctamente a S3 BOL-00001/resumen-inscripcion-BOL-00001.txt
+```
+
+### 6. Descargar resumen desde S3
+
+```powershell
+Invoke-WebRequest -Uri "http://localhost:8080/api/inscripciones/1/resumen/s3/download" -OutFile "resumen-descargado-s3.txt"
+```
+
+### 7. Modificar resumen en S3
+
+```powershell
+$nuevoContenido = @"
+RESUMEN DE INSCRIPCION MODIFICADO
+=================================
+
+Numero de resumen: BOL-00001
+ID de inscripcion: 1
+ID estudiante: 1
+Fecha de emision: 2026-05-31
+
+Cursos inscritos:
+- Spring Boot desde cero | ID curso: 1 | Costo: `$50000
+
+Total pagado: `$50000
+Metodo de pago: TARJETA
+Estado de pago: APROBADO_SIMULADO
+
+Observacion: Archivo modificado correctamente desde el endpoint PUT.
+"@
+
+Invoke-RestMethod -Uri "http://localhost:8080/api/inscripciones/1/resumen/s3" -Method Put -ContentType "text/plain; charset=utf-8" -Body $nuevoContenido
+```
+
+### 8. Eliminar resumen desde S3
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8080/api/inscripciones/1/resumen/s3" -Method Delete
+```
+
+---
+
+## Pruebas con Postman / PowerShell
+
+Se realizaron pruebas sobre el CRUD de cursos:
+
+```txt
+GET    /api/cursos
+POST   /api/cursos
+GET    /api/cursos/{id}
+PUT    /api/cursos/{id}
+DELETE /api/cursos/{id}
+```
+
+También se probaron flujos adicionales:
+
+```txt
+POST /api/pagos
+PUT  /api/pagos/{id}/aprobar
+
+POST /api/notificaciones
+PUT  /api/notificaciones/{id}/leer
+```
+
+Para la integración con AWS S3 se validó el siguiente flujo:
+
+```txt
+GET    /api/inscripciones/{id}/resumen/archivo
+POST   /api/inscripciones/{id}/resumen/s3
+GET    /api/inscripciones/{id}/resumen/s3/download
+PUT    /api/inscripciones/{id}/resumen/s3
+DELETE /api/inscripciones/{id}/resumen/s3
+```
+
+Estas pruebas permitieron validar la persistencia en base de datos, la generación de archivos físicos, la subida al bucket S3, la descarga desde S3, la modificación del archivo y la eliminación del objeto almacenado.
+
+---
+
+## CI/CD
+
+El proyecto cuenta con un pipeline de GitHub Actions que automatiza:
+
+1. Descarga del código fuente.
+2. Configuración de Java 21.
+3. Compilación del proyecto Spring Boot usando Maven Wrapper.
+4. Construcción de imagen Docker.
+5. Inicio de sesión en Docker Hub.
+6. Publicación de imagen en Docker Hub.
+7. Despliegue en una instancia EC2 mediante SSH.
+8. Ejecución del contenedor con variables de entorno.
+
+El pipeline utiliza:
+
+```txt
+actions/checkout@v4
+actions/setup-java@v4
+docker/login-action
+```
+
+El uso de `docker/login-action` permite reemplazar el login manual a Docker Hub por una acción oficial, dejando el pipeline más ordenado y alineado con buenas prácticas.
+
+Actualmente se utiliza:
+
+```txt
+-DskipTests
+```
+
+---
+
+## Docker
+
+El proyecto incluye un `Dockerfile` para construir y ejecutar la aplicación en contenedor.
+
+El despliegue en EC2 ejecuta el contenedor usando variables de entorno para la conexión a la base de datos y la configuración de la aplicación.
+
+Además, se utiliza:
+
+```txt
+--restart unless-stopped
+```
+
+Esto permite que el servicio se reinicie automáticamente si el contenedor se detiene o si la instancia se reinicia.
+
+---
+
+## Actuator
+
+El proyecto incluye Spring Boot Actuator para revisar el estado del servicio.
+
+Endpoint principal:
+
+```txt
+GET /actuator/health
 ```
 
 ---
@@ -235,44 +531,6 @@ También se manejan errores de solicitud inválida y errores generales del servi
 
 ---
 
-## Pruebas con Postman
-
-Se realizaron pruebas sobre el CRUD de cursos:
-
-```txt
-GET    /api/cursos
-POST   /api/cursos
-GET    /api/cursos/{id}
-PUT    /api/cursos/{id}
-DELETE /api/cursos/{id}
-```
-
-También se probaron flujos adicionales:
-
-```txt
-POST /api/pagos
-PUT  /api/pagos/{id}/aprobar
-
-POST /api/notificaciones
-PUT  /api/notificaciones/{id}/leer
-```
-
-Estas pruebas permitieron validar la persistencia en base de datos, las respuestas HTTP y el manejo de errores.
-
----
-
-## Actuator
-
-El proyecto incluye Spring Boot Actuator para revisar el estado del servicio.
-
-Endpoint principal:
-
-```txt
-GET /actuator/health
-```
-
----
-
 ## Relación con los requerimientos
 
 | Requerimiento | Estado en el proyecto |
@@ -280,13 +538,17 @@ GET /actuator/health
 | Usuarios y autenticación | Se implementa gestión base de usuarios y se propone Auth Service en la arquitectura. |
 | Gestión de cursos | Implementado mediante CRUD de cursos. |
 | Inscripción en cursos | Implementado mediante módulo de inscripciones. |
+| Generación de resumen de inscripción | Implementado mediante endpoint de boleta/resumen. |
+| Descarga de resumen como archivo físico | Implementado mediante archivo `.txt`. |
+| Subida de resumen a AWS S3 | Implementado mediante endpoint dedicado. |
+| Carpeta por número de resumen en S3 | Implementado con ruta `BOL-00001/resumen-inscripcion-BOL-00001.txt`. |
+| Descarga de resumen desde S3 | Implementado. |
+| Modificación de resumen en S3 | Implementado. |
+| Eliminación de resumen en S3 | Implementado. |
 | Evaluaciones | Implementado mediante módulo de evaluaciones. |
 | Pagos | Implementado mediante módulo de pagos con estados. |
 | Notificaciones | Implementado mediante módulo de notificaciones. |
 | Comunicación entre microservicios | Propuesta documentada usando REST. |
+| CI/CD con GitHub Actions, Docker Hub y EC2 | Implementado. |
 
 ---
-
-## Estado del proyecto
-
-La aplicación cuenta con backend funcional en Spring Boot, conexión a Oracle Database, endpoints REST, servicios de negocio separados, logging con AOP, manejo global de excepciones y documentación de arquitectura.
