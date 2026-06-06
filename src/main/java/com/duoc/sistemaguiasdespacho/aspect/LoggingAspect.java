@@ -1,4 +1,4 @@
-package com.duoc.LearningPlatformValidation.aspect;
+package com.duoc.sistemaguiasdespacho.aspect;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -13,7 +13,7 @@ public class LoggingAspect {
 
     private static final Logger logger = LoggerFactory.getLogger(LoggingAspect.class);
 
-    @Around("execution(* com.duoc.LearningPlatformValidation.controller..*(..)) || execution(* com.duoc.LearningPlatformValidation.service..*(..))")
+    @Around("execution(* com.duoc.sistemaguiasdespacho.controller..*(..)) || execution(* com.duoc.sistemaguiasdespacho.service..*(..))")
     public Object registrarEjecucion(ProceedingJoinPoint joinPoint) throws Throwable {
 
         String nombreClase = joinPoint.getSignature().getDeclaringTypeName();
@@ -37,3 +37,4 @@ public class LoggingAspect {
         }
     }
 }
+

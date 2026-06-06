@@ -1,4 +1,4 @@
-package com.duoc.LearningPlatformValidation.config;
+package com.duoc.sistemaguiasdespacho.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

@@ -1,4 +1,4 @@
-package com.duoc.LearningPlatformValidation.exception;
+package com.duoc.sistemaguiasdespacho.exception;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -59,3 +59,4 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
     }
 }
+

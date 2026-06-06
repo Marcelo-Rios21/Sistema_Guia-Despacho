@@ -1,4 +1,4 @@
-package com.duoc.LearningPlatformValidation.exception;
+package com.duoc.sistemaguiasdespacho.exception;
 
 public class RecursoNoEncontradoException extends RuntimeException {
 
@@ -6,3 +6,4 @@ public class RecursoNoEncontradoException extends RuntimeException {
         super(mensaje);
     }
 }
+

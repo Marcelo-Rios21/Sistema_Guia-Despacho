@@ -13,10 +13,10 @@
 	</parent>
 
 	<groupId>com.duoc</groupId>
-	<artifactId>LearningPlatformValidation</artifactId>
+	<artifactId>sistema-guias-despacho</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>LearningPlatformValidation</name>
-	<description>Learning Platform Validation</description>
+	<name>sistema-guias-despacho</name>
+	<description>Sistema de gestion de guias de despacho con EFS, S3 y CI/CD</description>
 
 	<properties>
 		<java.version>17</java.version>
