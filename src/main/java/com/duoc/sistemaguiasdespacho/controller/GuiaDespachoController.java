@@ -4,11 +4,16 @@ import com.duoc.sistemaguiasdespacho.dto.GuiaDespachoRequest;
 import com.duoc.sistemaguiasdespacho.dto.GuiaDespachoResponse;
 import com.duoc.sistemaguiasdespacho.service.GuiaDespachoService;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,6 +36,45 @@ public class GuiaDespachoController {
     public ResponseEntity<GuiaDespachoResponse> crearGuia(@RequestBody GuiaDespachoRequest request) {
         GuiaDespachoResponse response = guiaDespachoService.crearGuia(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{id}/s3")
+    public ResponseEntity<GuiaDespachoResponse> subirGuiaAS3(@PathVariable Long id) {
+        GuiaDespachoResponse response = guiaDespachoService.subirGuiaAS3(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<GuiaDespachoResponse> actualizarGuia(
+            @PathVariable Long id,
+            @RequestBody GuiaDespachoRequest request
+    ) {
+        GuiaDespachoResponse response = guiaDespachoService.actualizarGuia(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<GuiaDespachoResponse> eliminarGuiaDesdeS3(@PathVariable Long id) {
+        GuiaDespachoResponse response = guiaDespachoService.eliminarGuiaDesdeS3(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/descargar")
+    public ResponseEntity<byte[]> descargarGuiaDesdeS3(@PathVariable Long id) {
+        byte[] archivo = guiaDespachoService.descargarGuiaDesdeS3(id);
+        String nombreArchivo = guiaDespachoService.obtenerNombreArchivoDescarga(id);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+                ContentDisposition.attachment()
+                        .filename(nombreArchivo)
+                        .build()
+        );
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(archivo);
     }
 
     @GetMapping("/{id}")

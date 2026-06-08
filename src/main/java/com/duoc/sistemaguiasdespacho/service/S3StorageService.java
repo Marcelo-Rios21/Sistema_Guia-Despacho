@@ -1,8 +1,8 @@
 package com.duoc.sistemaguiasdespacho.service;
 
+import com.duoc.sistemaguiasdespacho.model.GuiaDespacho;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -11,8 +11,16 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.format.DateTimeFormatter;
+
 @Service
 public class S3StorageService {
+
+    private static final String CONTENT_TYPE_PDF = "application/pdf";
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private final S3Client s3Client;
 
@@ -23,8 +31,25 @@ public class S3StorageService {
         this.s3Client = s3Client;
     }
 
-    public String construirRutaResumen(String numeroResumen, String nombreArchivo) {
-        return numeroResumen + "/" + nombreArchivo;
+    public String construirRutaGuia(GuiaDespacho guia) {
+        String fecha = guia.getFechaEmision().format(DATE_FORMATTER);
+        String transportistaNormalizado = normalizarSegmentoRuta(guia.getTransportista());
+        String numeroNormalizado = normalizarSegmentoRuta(guia.getNumeroGuia());
+
+        return "guias/"
+                + fecha + "/"
+                + transportistaNormalizado + "/"
+                + "guia-" + numeroNormalizado + ".pdf";
+    }
+
+    public String subirGuiaDesdeRuta(GuiaDespacho guia, Path rutaArchivoLocal) {
+        try {
+            byte[] contenido = Files.readAllBytes(rutaArchivoLocal);
+            String rutaS3 = construirRutaGuia(guia);
+            return subirArchivo(rutaS3, contenido, CONTENT_TYPE_PDF);
+        } catch (IOException e) {
+            throw new IllegalStateException("No se pudo leer la guia generada para subirla a S3", e);
+        }
     }
 
     public String subirArchivo(String rutaArchivo, byte[] contenido, String contentType) {
@@ -50,6 +75,10 @@ public class S3StorageService {
         return response.asByteArray();
     }
 
+    public String actualizarGuiaDesdeRuta(GuiaDespacho guia, Path rutaArchivoLocal) {
+        return subirGuiaDesdeRuta(guia, rutaArchivoLocal);
+    }
+
     public String modificarArchivo(String rutaArchivo, byte[] nuevoContenido, String contentType) {
         return subirArchivo(rutaArchivo, nuevoContenido, contentType);
     }
@@ -61,5 +90,17 @@ public class S3StorageService {
                 .build();
 
         s3Client.deleteObject(request);
+    }
+
+    private String normalizarSegmentoRuta(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return "sin-dato";
+        }
+
+        return valor.trim()
+                .toLowerCase()
+                .replaceAll("[^a-z0-9-]", "-")
+                .replaceAll("-+", "-")
+                .replaceAll("^-|-$", "");
     }
 }
