@@ -20,15 +20,18 @@ public class GuiaDespachoService {
     private final GuiaDespachoRepository guiaDespachoRepository;
     private final EfsStorageService efsStorageService;
     private final S3StorageService s3StorageService;
+    private final PermisoGuiaService permisoGuiaService;
 
     public GuiaDespachoService(
             GuiaDespachoRepository guiaDespachoRepository,
             EfsStorageService efsStorageService,
-            S3StorageService s3StorageService
+            S3StorageService s3StorageService,
+            PermisoGuiaService permisoGuiaService
     ) {
         this.guiaDespachoRepository = guiaDespachoRepository;
         this.efsStorageService = efsStorageService;
         this.s3StorageService = s3StorageService;
+        this.permisoGuiaService = permisoGuiaService;
     }
 
     @Transactional
@@ -54,8 +57,10 @@ public class GuiaDespachoService {
     }
 
     @Transactional
-    public GuiaDespachoResponse subirGuiaAS3(Long id) {
+    public GuiaDespachoResponse subirGuiaAS3(Long id, String rolUsuario, String transportistaHeader) {
         GuiaDespacho guia = obtenerEntidadPorId(id);
+
+        permisoGuiaService.validarAccesoAGuia(guia, rolUsuario, transportistaHeader);
 
         if (guia.getRutaEfs() == null || guia.getRutaEfs().isBlank()) {
             throw new IllegalStateException("La guia no tiene una ruta EFS asociada");
@@ -78,10 +83,18 @@ public class GuiaDespachoService {
     }
 
     @Transactional
-    public GuiaDespachoResponse actualizarGuia(Long id, GuiaDespachoRequest request) {
+    public GuiaDespachoResponse actualizarGuia(
+            Long id,
+            GuiaDespachoRequest request,
+            String rolUsuario,
+            String transportistaHeader
+    ) {
         validarRequestCreacion(request);
 
         GuiaDespacho guia = obtenerEntidadPorId(id);
+
+        permisoGuiaService.validarAccesoAGuia(guia, rolUsuario, transportistaHeader);
+        validarCambioTransportistaPermitido(request, rolUsuario, transportistaHeader);
 
         String nuevoNumeroGuia = request.getNumeroGuia().trim();
         boolean cambiaNumeroGuia = !guia.getNumeroGuia().equalsIgnoreCase(nuevoNumeroGuia);
@@ -113,8 +126,10 @@ public class GuiaDespachoService {
     }
 
     @Transactional
-    public GuiaDespachoResponse eliminarGuiaDesdeS3(Long id) {
+    public GuiaDespachoResponse eliminarGuiaDesdeS3(Long id, String rolUsuario, String transportistaHeader) {
         GuiaDespacho guia = obtenerEntidadPorId(id);
+
+        permisoGuiaService.validarAccesoAGuia(guia, rolUsuario, transportistaHeader);
 
         if (guia.getRutaS3() == null || guia.getRutaS3().isBlank()) {
             throw new IllegalStateException("La guia no tiene archivo asociado en S3");
@@ -131,8 +146,10 @@ public class GuiaDespachoService {
     }
 
     @Transactional(readOnly = true)
-    public byte[] descargarGuiaDesdeS3(Long id) {
+    public byte[] descargarGuiaDesdeS3(Long id, String rolUsuario, String transportistaHeader) {
         GuiaDespacho guia = obtenerEntidadPorId(id);
+
+        permisoGuiaService.validarAccesoAGuia(guia, rolUsuario, transportistaHeader);
 
         if (guia.getRutaS3() == null || guia.getRutaS3().isBlank()) {
             throw new IllegalStateException("La guia no ha sido subida a S3 o fue eliminada");
@@ -188,6 +205,20 @@ public class GuiaDespachoService {
         return guias.stream()
                 .map(this::convertirAResponse)
                 .toList();
+    }
+
+    private void validarCambioTransportistaPermitido(
+            GuiaDespachoRequest request,
+            String rolUsuario,
+            String transportistaHeader
+    ) {
+        if (rolUsuario != null
+                && rolUsuario.trim().equalsIgnoreCase("TRANSPORTISTA")
+                && transportistaHeader != null
+                && !transportistaHeader.isBlank()
+                && !request.getTransportista().trim().equalsIgnoreCase(transportistaHeader.trim())) {
+            throw new SecurityException("No puede modificar una guia asignandola a otro transportista");
+        }
     }
 
     private GuiaDespacho obtenerEntidadPorId(Long id) {

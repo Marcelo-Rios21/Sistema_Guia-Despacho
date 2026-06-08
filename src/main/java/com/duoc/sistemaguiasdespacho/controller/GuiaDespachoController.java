@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,29 +40,43 @@ public class GuiaDespachoController {
     }
 
     @PostMapping("/{id}/s3")
-    public ResponseEntity<GuiaDespachoResponse> subirGuiaAS3(@PathVariable Long id) {
-        GuiaDespachoResponse response = guiaDespachoService.subirGuiaAS3(id);
+    public ResponseEntity<GuiaDespachoResponse> subirGuiaAS3(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Role") String rolUsuario,
+            @RequestHeader(value = "X-Transportista", required = false) String transportista
+    ) {
+        GuiaDespachoResponse response = guiaDespachoService.subirGuiaAS3(id, rolUsuario, transportista);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<GuiaDespachoResponse> actualizarGuia(
             @PathVariable Long id,
-            @RequestBody GuiaDespachoRequest request
+            @RequestBody GuiaDespachoRequest request,
+            @RequestHeader("X-User-Role") String rolUsuario,
+            @RequestHeader(value = "X-Transportista", required = false) String transportista
     ) {
-        GuiaDespachoResponse response = guiaDespachoService.actualizarGuia(id, request);
+        GuiaDespachoResponse response = guiaDespachoService.actualizarGuia(id, request, rolUsuario, transportista);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<GuiaDespachoResponse> eliminarGuiaDesdeS3(@PathVariable Long id) {
-        GuiaDespachoResponse response = guiaDespachoService.eliminarGuiaDesdeS3(id);
+    public ResponseEntity<GuiaDespachoResponse> eliminarGuiaDesdeS3(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Role") String rolUsuario,
+            @RequestHeader(value = "X-Transportista", required = false) String transportista
+    ) {
+        GuiaDespachoResponse response = guiaDespachoService.eliminarGuiaDesdeS3(id, rolUsuario, transportista);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}/descargar")
-    public ResponseEntity<byte[]> descargarGuiaDesdeS3(@PathVariable Long id) {
-        byte[] archivo = guiaDespachoService.descargarGuiaDesdeS3(id);
+    public ResponseEntity<byte[]> descargarGuiaDesdeS3(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Role") String rolUsuario,
+            @RequestHeader(value = "X-Transportista", required = false) String transportista
+    ) {
+        byte[] archivo = guiaDespachoService.descargarGuiaDesdeS3(id, rolUsuario, transportista);
         String nombreArchivo = guiaDespachoService.obtenerNombreArchivoDescarga(id);
 
         HttpHeaders headers = new HttpHeaders();
