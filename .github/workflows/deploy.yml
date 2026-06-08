@@ -9,6 +9,10 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      IMAGE_NAME: sistema-guias-despacho
+      CONTAINER_NAME: sistema-guias-despacho-container
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,10 +35,12 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-aprendizaje:latest .
+        run: |
+          docker build -t "${{ secrets.DOCKERHUB_USERNAME }}/${IMAGE_NAME}:latest" .
 
       - name: Push Docker image to Docker Hub
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-aprendizaje:latest
+        run: |
+          docker push "${{ secrets.DOCKERHUB_USERNAME }}/${IMAGE_NAME}:latest"
 
       - name: Configure SSH key
         run: |
@@ -45,20 +51,31 @@ jobs:
       - name: Deploy on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-aprendizaje:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/sistema-guias-despacho:latest
 
-            docker rm -f plataforma-aprendizaje-container 2>/dev/null || true
+            docker rm -f sistema-guias-despacho-container 2>/dev/null || true
+
+            sudo mkdir -p /mnt/efs/guias
+            sudo chmod -R 777 /mnt/efs
 
             docker run -d \
-              --name plataforma-aprendizaje-container \
+              --name sistema-guias-despacho-container \
               --restart unless-stopped \
               -p 8080:8080 \
+              -v /mnt/efs:/mnt/efs \
               -e DB_URL='${{ secrets.DB_URL }}' \
               -e DB_USERNAME='${{ secrets.DB_USERNAME }}' \
               -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
               -e DB_DRIVER='${{ secrets.DB_DRIVER }}' \
+              -e AWS_ACCESS_KEY_ID='${{ secrets.AWS_ACCESS_KEY_ID }}' \
+              -e AWS_SECRET_ACCESS_KEY='${{ secrets.AWS_SECRET_ACCESS_KEY }}' \
+              -e AWS_SESSION_TOKEN='${{ secrets.AWS_SESSION_TOKEN }}' \
+              -e AWS_REGION='${{ secrets.AWS_REGION }}' \
+              -e AWS_DEFAULT_REGION='${{ secrets.AWS_REGION }}' \
+              -e AWS_S3_BUCKET='${{ secrets.AWS_S3_BUCKET }}' \
+              -e APP_EFS_PATH='/mnt/efs/guias' \
               -e PORT='8080' \
-              ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-aprendizaje:latest
+              ${{ secrets.DOCKERHUB_USERNAME }}/sistema-guias-despacho:latest
 
             docker ps
           EOF
